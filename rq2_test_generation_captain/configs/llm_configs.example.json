@@ -1,0 +1,19 @@
+{
+  "llms": {
+    "llm_a": {
+      "type": "openai_compatible",
+      "base_url": "https://YOUR_PROVIDER_A/v1",
+      "model": "YOUR_MODEL_A",
+      "api_key_env": "LLM_A_API_KEY",
+      "timeout_sec": 180
+    },
+    "llm_b": {
+      "type": "openai_compatible",
+      "base_url": "https://YOUR_PROVIDER_B/v1",
+      "model": "YOUR_MODEL_B",
+      "api_key_env": "LLM_B_API_KEY",
+      "timeout_sec": 180
+    },
+    "mock": {"type": "mock"}
+  }
+}

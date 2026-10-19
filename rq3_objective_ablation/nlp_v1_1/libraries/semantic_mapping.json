@@ -1,0 +1,62 @@
+{
+  "version": "1.1",
+  "description": "Frozen deterministic transition/entity-to-task-semantics mapping. Implementation visibility is separated from semantic inducibility.",
+  "event_rules": [
+    {"event_prefix":"RECEIVE","implementation_visibility":"internal","semantic_inducibility":"none","capability":"task_intake","input_type":"user_query","output_type":"task_context"},
+    {"event_prefix":"PLAN","implementation_visibility":"internal","semantic_inducibility":"none","capability":"planning","input_type":"task_context","output_type":"execution_plan"},
+    {"event_prefix":"REPLAN","implementation_visibility":"internal","semantic_inducibility":"none","capability":"replanning","input_type":"execution_feedback","output_type":"execution_plan"},
+    {"event_prefix":"REPORT","implementation_visibility":"internal","semantic_inducibility":"none","capability":"result_reporting","input_type":"agent_result","output_type":"orchestration_context"},
+    {"event_prefix":"DELEGATE","implementation_visibility":"internal","semantic_inducibility":"soft","capability":"agent_role_selection","input_type":"subtask","output_type":"delegated_subtask","derive_capability_from_agent":true,"derive_domain_from_agent":true},
+    {"event_prefix":"SELECT_INITIAL","implementation_visibility":"internal","semantic_inducibility":"soft","capability":"agent_role_selection","input_type":"task_context","output_type":"selected_agent","derive_capability_from_agent":true,"derive_domain_from_agent":true},
+    {"event_prefix":"SELECT_NEXT","implementation_visibility":"internal","semantic_inducibility":"soft","capability":"agent_role_selection","input_type":"orchestration_context","output_type":"selected_agent","derive_capability_from_agent":true,"derive_domain_from_agent":true},
+
+    {"event_prefix":"TOOL_CALL","tool":"Browser","implementation_visibility":"internal","semantic_inducibility":"strong","capability":"web_retrieval","input_type":"search_query","output_type":"web_resource","constraint_templates":["requires_public_web_source"]},
+    {"event_prefix":"TOOL_CALL","tool":"Bing_Search_API","implementation_visibility":"internal","semantic_inducibility":"strong","capability":"web_retrieval","input_type":"search_query","output_type":"web_resource","constraint_templates":["requires_public_web_source"]},
+    {"event_prefix":"TOOL_CALL","tool":"FileSystem","implementation_visibility":"internal","semantic_inducibility":"strong","capability":"document_inspection","input_type":"local_artifact","output_type":"extracted_evidence","constraint_templates":["requires_document_internal_evidence","anti_search_snippet_shortcut"]},
+    {"event_prefix":"TOOL_CALL","tool":"Computer_terminal","implementation_visibility":"internal","semantic_inducibility":"strong","capability":"executable_computation","input_type":"code_or_data","output_type":"computed_result","constraint_templates":["requires_actual_computation"]},
+    {"event_prefix":"TOOL_CALL","tool":"Shell","implementation_visibility":"internal","semantic_inducibility":"strong","capability":"executable_computation","input_type":"code_or_data","output_type":"computed_result","constraint_templates":["requires_actual_computation"]},
+    {"event_prefix":"TOOL_RETURN","implementation_visibility":"internal","semantic_inducibility":"none","capability":"tool_result_return","input_type":"tool_output","output_type":"agent_context"},
+
+    {"event_prefix":"ASSESS_COMPLETE","implementation_visibility":"internal","semantic_inducibility":"none","capability":"completion_assessment","input_type":"orchestration_context","output_type":"completion_judgment"},
+    {"event_prefix":"ASSESS_PROGRESS","implementation_visibility":"internal","semantic_inducibility":"none","capability":"progress_assessment","input_type":"orchestration_context","output_type":"progress_judgment"},
+    {"event_prefix":"ASSESS_STALL","implementation_visibility":"internal","semantic_inducibility":"none","capability":"stall_assessment","input_type":"orchestration_context","output_type":"stall_judgment"},
+    {"event_prefix":"ASSESS_LOOP","implementation_visibility":"internal","semantic_inducibility":"none","capability":"loop_assessment","input_type":"orchestration_context","output_type":"loop_judgment"},
+    {"event_prefix":"FINALIZE","implementation_visibility":"internal","semantic_inducibility":"none","capability":"finalization","input_type":"verified_result","output_type":"final_answer"},
+    {"event_prefix":"TERMINATE","implementation_visibility":"internal","semantic_inducibility":"none","capability":"finalization","input_type":"result","output_type":"final_answer"},
+    {"event_prefix":"BUDGET_TERMINATE","implementation_visibility":"internal","semantic_inducibility":"none","capability":"budget_termination","input_type":"execution_context","output_type":"terminated_execution"}
+  ],
+  "agent_role_keyword_rules": [
+    {"keywords":["verification","verify","factcheck","fact_check","validation","validator"],"capability":"verification"},
+    {"keywords":["web","search","serving","wayback","browser","research"],"capability":"web_retrieval"},
+    {"keywords":["file","document","pdf"],"capability":"document_inspection"},
+    {"keywords":["extraction","extract","collection","collector","json"],"capability":"data_extraction"},
+    {"keywords":["analysis","analyst","statistics","statistical","probability","critic"],"capability":"data_analysis"},
+    {"keywords":["coder","coding","code","programming","programmer","debug","debugging","algorithm","software"],"capability":"code_generation"},
+    {"keywords":["calculation","calculate","math","mathematics","excel","spreadsheet","terminal"],"capability":"executable_computation"}
+  ],
+  "domain_stopwords": [
+    "expert","agent","assistant","specialist","orchestrator","surfer","terminal","computer",
+    "verification","verify","validation","validator","web","search","serving","wayback","browser","research",
+    "file","document","pdf","extraction","extract","collection","collector","analysis","analyst","statistics","statistical","probability",
+    "coder","coding","code","programming","programmer","debug","debugging","algorithm","software","calculation","calculate","math","mathematics","excel","spreadsheet",
+    "data","general","task"
+  ],
+  "capability_io": {
+    "web_retrieval":{"input":"search_query","output":"web_resource"},
+    "document_inspection":{"input":"local_artifact","output":"extracted_evidence"},
+    "executable_computation":{"input":"code_or_data","output":"computed_result"},
+    "verification":{"input":"candidate_result","output":"verified_result"},
+    "data_extraction":{"input":"source_data","output":"structured_data"},
+    "data_analysis":{"input":"structured_data","output":"derived_result"},
+    "code_generation":{"input":"task_specification","output":"code_artifact"}
+  },
+  "dependency_rules": [
+    {"before":"web_retrieval","after":"document_inspection","bridge":"artifact_acquisition","description":"The document inspected later should be located or obtained through the preceding Web retrieval step."},
+    {"before":"document_inspection","after":"executable_computation","bridge":"evidence_to_computation","description":"The computation should use values or evidence extracted from the inspected document."},
+    {"before":"web_retrieval","after":"verification","bridge":"independent_source_check","description":"The retrieved result should be checked against an independent source or evidence item."},
+    {"before":"data_extraction","after":"data_analysis","bridge":"structured_data_flow","description":"The analysis should operate on data extracted in the earlier step."},
+    {"before":"code_generation","after":"executable_computation","bridge":"code_to_execution","description":"The generated code should be executed or otherwise used to obtain the requested result."},
+    {"before":"web_retrieval","after":"data_extraction","bridge":"web_data_extraction","description":"Data should be extracted from information obtained through the Web retrieval step."},
+    {"before":"data_analysis","after":"verification","bridge":"analysis_verification","description":"The derived result should be checked before finalization."}
+  ]
+}

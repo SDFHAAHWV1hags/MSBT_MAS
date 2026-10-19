@@ -1,0 +1,150 @@
+{
+  "schema_version": "1.0",
+  "model_id": "CaptainAgent-Alg019-BotanicalGrocery",
+  "family": "CaptainAgent-generated",
+  "framework": "AG2 / CaptainAgent (Who&When Algorithm-Generated 19.json)",
+  "modeling_scope": "static test model; no trace-based model completion",
+  "provenance": {
+    "dataset_dir": "/home/zs/mas/Agents_Failure_Attribution-main/Who&When/Algorithm-Generated",
+    "source_file": "19.json",
+    "question_id": "3cef3a44-215e-4aed-8e3b-b1e3f08063b7",
+    "gaia_attachment": null,
+    "level": 1
+  },
+  "modeling_notes": [
+    "Pure text-reasoning task (no attachments, no web tools); the only tool is the group-chat code executor Computer_terminal.",
+    "The system delegates subtasks and selects the next speaker via an implicit Captain/group-chat manager (over_approximation: fully connected).",
+    "Prompt evidence: Debugging_Problem_Solving_Expert / DebuggingTesting_Expert / Validation_Expert contain a 'How to use code?' section; PlantClassification_Expert is a pure domain-knowledge role with no code section, but remains over-approximately bound because the framework does not block submissions.",
+    "In the trace logs PlantClassification_Expert was never selected to speak by the manager; when there is no executable code, Computer_terminal replies with a group-chat notice and requests TERMINATE."
+  ],
+  "structure": {
+    "agents": [
+      "PlantClassification_Expert",
+      "Debugging_Problem_Solving_Expert",
+      "DebuggingTesting_Expert",
+      "Validation_Expert"
+    ],
+    "tools": [
+      "Computer_terminal"
+    ],
+    "special_entities": [
+      "START",
+      "END"
+    ],
+    "entities": [
+      "START",
+      "PlantClassification_Expert",
+      "Debugging_Problem_Solving_Expert",
+      "DebuggingTesting_Expert",
+      "Validation_Expert",
+      "Computer_terminal",
+      "END"
+    ],
+    "entity_types": {
+      "START": "Special",
+      "END": "Special",
+      "PlantClassification_Expert": "Agent",
+      "Debugging_Problem_Solving_Expert": "Agent",
+      "DebuggingTesting_Expert": "Agent",
+      "Validation_Expert": "Agent",
+      "Computer_terminal": "Tool"
+    },
+    "agent_coordination": {
+      "selector": "LLM/group-chat manager (CaptainAgent)",
+      "over_approximation": true,
+      "edges": [
+        {"source": "PlantClassification_Expert", "target": "PlantClassification_Expert"},
+        {"source": "PlantClassification_Expert", "target": "Debugging_Problem_Solving_Expert"},
+        {"source": "PlantClassification_Expert", "target": "DebuggingTesting_Expert"},
+        {"source": "PlantClassification_Expert", "target": "Validation_Expert"},
+        {"source": "Debugging_Problem_Solving_Expert", "target": "PlantClassification_Expert"},
+        {"source": "Debugging_Problem_Solving_Expert", "target": "Debugging_Problem_Solving_Expert"},
+        {"source": "Debugging_Problem_Solving_Expert", "target": "DebuggingTesting_Expert"},
+        {"source": "Debugging_Problem_Solving_Expert", "target": "Validation_Expert"},
+        {"source": "DebuggingTesting_Expert", "target": "PlantClassification_Expert"},
+        {"source": "DebuggingTesting_Expert", "target": "Debugging_Problem_Solving_Expert"},
+        {"source": "DebuggingTesting_Expert", "target": "DebuggingTesting_Expert"},
+        {"source": "DebuggingTesting_Expert", "target": "Validation_Expert"},
+        {"source": "Validation_Expert", "target": "PlantClassification_Expert"},
+        {"source": "Validation_Expert", "target": "Debugging_Problem_Solving_Expert"},
+        {"source": "Validation_Expert", "target": "DebuggingTesting_Expert"},
+        {"source": "Validation_Expert", "target": "Validation_Expert"}
+      ]
+    },
+    "agent_tool_bindings": [
+      {"agent": "PlantClassification_Expert", "tool": "Computer_terminal", "evidence": "over-approximation: shared group-chat executor"},
+      {"agent": "Debugging_Problem_Solving_Expert", "tool": "Computer_terminal", "evidence": "prompt: 'How to use code?' section"},
+      {"agent": "DebuggingTesting_Expert", "tool": "Computer_terminal", "evidence": "prompt: 'How to use code?' section"},
+      {"agent": "Validation_Expert", "tool": "Computer_terminal", "evidence": "prompt: 'How to use code?' section"}
+    ]
+  },
+  "agent_definitions": {
+    "PlantClassification_Expert": {
+      "role": "Botanist specialized in plant classification; identifies and classifies plants by botanical categories (fruits vs vegetables).",
+      "capabilities": ["domain_knowledge"]
+    },
+    "Debugging_Problem_Solving_Expert": {
+      "role": "Python programming expert in string manipulation and complex algorithm development; diagnoses task/plan misalignment and proposes solutions.",
+      "capabilities": ["coding", "data_analysis"]
+    },
+    "DebuggingTesting_Expert": {
+      "role": "Python programming and testing specialist; verifies algorithms with test cases and edge conditions.",
+      "capabilities": ["coding", "verification"]
+    },
+    "Validation_Expert": {
+      "role": "Validation expert ensuring accuracy and reliability of solutions; detects errors and inconsistencies before acceptance.",
+      "capabilities": ["verification", "data_analysis"]
+    }
+  },
+  "configuration_parameters": {
+    "max_interactions": 12
+  },
+  "state_model": {
+    "core_variables": ["activeEntity", "executionStatus", "budget"],
+    "specific_variables": [],
+    "initial_state": {
+      "activeEntity": "START",
+      "executionStatus": "Running",
+      "budget": 12
+    },
+    "terminal_predicate": "activeEntity == END"
+  },
+  "transition_rules": [
+    {
+      "id": "CA-R1",
+      "event": "SELECT_INITIAL(a)",
+      "guard": "activeEntity == START and a in Agents and budget > 0",
+      "update": "activeEntity := a; budget := budget - 1"
+    },
+    {
+      "id": "CA-R2",
+      "event": "SELECT_NEXT(a_j)",
+      "guard": "activeEntity in Agents and a_j in Agents and budget > 0",
+      "update": "activeEntity := a_j; budget := budget - 1"
+    },
+    {
+      "id": "CA-R3",
+      "event": "TOOL_CALL(a,t)",
+      "guard": "activeEntity == a and (a,t) in Gamma_T",
+      "update": "activeEntity := t"
+    },
+    {
+      "id": "CA-R4",
+      "event": "TOOL_RETURN(t,a)",
+      "guard": "activeEntity == t and (a,t) in Gamma_T",
+      "update": "activeEntity := a"
+    },
+    {
+      "id": "CA-R5",
+      "event": "TERMINATE",
+      "guard": "activeEntity in Agents",
+      "update": "activeEntity := END; executionStatus := Completed"
+    },
+    {
+      "id": "CA-R6",
+      "event": "BUDGET_TERMINATE",
+      "guard": "budget == 0 and activeEntity != END",
+      "update": "activeEntity := END; executionStatus := Terminated"
+    }
+  ]
+}

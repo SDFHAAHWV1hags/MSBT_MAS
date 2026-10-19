@@ -1,0 +1,21 @@
+{
+  "version":"1.1",
+  "description":"Small curated lexical expansion table; optionally augmented with locally installed WordNet without runtime downloads.",
+  "terms":{
+    "find":["locate","retrieve","obtain","discover","search"],
+    "retrieve":["find","locate","obtain","fetch"],
+    "document":["report","paper","pdf","article","file"],
+    "inspect":["read","examine","review","analyze"],
+    "extract":["identify","obtain","read","derive","collect"],
+    "verify":["check","confirm","validate","cross-check"],
+    "analyze":["examine","compare","aggregate","derive","study"],
+    "calculate":["compute","derive","evaluate"],
+    "code":["program","implementation","function","script"],
+    "web":["online","website","internet"],
+    "source":["reference","evidence","resource"],
+    "value":["number","figure","amount","result"],
+    "table":["chart","tabulation"],
+    "page":["section","location"],
+    "answer":["result","response","output"]
+  }
+}

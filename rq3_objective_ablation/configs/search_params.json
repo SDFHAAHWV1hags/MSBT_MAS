@@ -1,0 +1,17 @@
+{
+  "population_size": 100,
+  "generations": 200,
+  "fitness_evaluations_nsga2_spea2": 20100,
+  "fitness_evaluations_random": 20100,
+  "crossover_rate": 0.80,
+  "mutation_rate": 0.35,
+  "max_path_length": 30,
+  "path_generation_retries": 30,
+  "terminal_template_weight": 0.20,
+  "diversity_k": 5,
+  "beta_alpha": 1.0,
+  "beta_beta": 1.0,
+  "pareto_selector_full_testing": "normalized_minimum_distance_to_ideal_point",
+  "rq2_front_metrics": ["hypervolume", "IGD+"],
+  "rq2_hv_reference_after_normalization": [1.1,1.1,1.1,1.1]
+}

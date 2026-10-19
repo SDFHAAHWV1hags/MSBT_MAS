@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.0",
+  "model_id": "RunningExample-MagenticOne-Full",
+  "family": "Magentic-One-derived running example (full 5-agent)",
+  "framework": "simplified Magentic-One abstraction",
+  "modeling_scope": "static test model; no trace-based model completion",
+  "structure": {
+    "agents": ["Orchestrator", "WebSurfer", "FileSurfer", "Coder", "ComputerTerminal"],
+    "tools": ["Browser", "FileSystem", "Shell"],
+    "special_entities": ["START", "END"],
+    "entities": [
+      "START",
+      "Orchestrator",
+      "WebSurfer",
+      "FileSurfer",
+      "Coder",
+      "ComputerTerminal",
+      "Browser",
+      "FileSystem",
+      "Shell",
+      "END"
+    ],
+    "entity_types": {
+      "START": "Special",
+      "END": "Special",
+      "Orchestrator": "Agent",
+      "WebSurfer": "Agent",
+      "FileSurfer": "Agent",
+      "Coder": "Agent",
+      "ComputerTerminal": "Agent",
+      "Browser": "Tool",
+      "FileSystem": "Tool",
+      "Shell": "Tool"
+    },
+    "agent_coordination": {
+      "selector": "Orchestrator",
+      "edges": [
+        {"source": "Orchestrator", "target": "WebSurfer"},
+        {"source": "WebSurfer", "target": "Orchestrator"},
+        {"source": "Orchestrator", "target": "FileSurfer"},
+        {"source": "FileSurfer", "target": "Orchestrator"},
+        {"source": "Orchestrator", "target": "Coder"},
+        {"source": "Coder", "target": "Orchestrator"},
+        {"source": "Orchestrator", "target": "ComputerTerminal"},
+        {"source": "ComputerTerminal", "target": "Orchestrator"}
+      ]
+    },
+    "agent_tool_bindings": [
+      {"agent": "WebSurfer", "tool": "Browser"},
+      {"agent": "FileSurfer", "tool": "FileSystem"},
+      {"agent": "ComputerTerminal", "tool": "Shell"}
+    ]
+  },
+  "configuration_parameters": {
+    "max_interactions": 16,
+    "stall_threshold": 3
+  },
+  "state_model": {
+    "core_variables": ["activeEntity", "executionStatus", "budget"],
+    "specific_variables": ["phase", "requestSatisfied", "stallCount"],
+    "initial_state": {
+      "activeEntity": "START",
+      "executionStatus": "Running",
+      "budget": 16,
+      "phase": "Idle",
+      "requestSatisfied": "Unknown",
+      "stallCount": "0"
+    },
+    "terminal_predicate": "activeEntity == END"
+  },
+  "transition_rules": [
+    {"id": "RE-R1", "event": "RECEIVE", "guard": "activeEntity == START", "update": "activeEntity := Orchestrator; phase := Planning"},
+    {"id": "RE-R2", "event": "PLAN", "guard": "activeEntity == Orchestrator and phase in {Planning,Replanning}", "update": "phase := Executing"},
+    {"id": "RE-R3", "event": "DELEGATE(a)", "guard": "activeEntity == Orchestrator and phase == Executing and a in {WebSurfer,FileSurfer,Coder,ComputerTerminal} and budget > 0", "update": "activeEntity := a; budget := budget - 1"},
+    {"id": "RE-R4", "event": "TOOL_CALL(WebSurfer,Browser)", "guard": "activeEntity == WebSurfer", "update": "activeEntity := Browser"},
+    {"id": "RE-R5", "event": "TOOL_RETURN(Browser,WebSurfer)", "guard": "activeEntity == Browser", "update": "activeEntity := WebSurfer"},
+    {"id": "RE-R6", "event": "TOOL_CALL(FileSurfer,FileSystem)", "guard": "activeEntity == FileSurfer", "update": "activeEntity := FileSystem"},
+    {"id": "RE-R7", "event": "TOOL_RETURN(FileSystem,FileSurfer)", "guard": "activeEntity == FileSystem", "update": "activeEntity := FileSurfer"},
+    {"id": "RE-R8", "event": "TOOL_CALL(ComputerTerminal,Shell)", "guard": "activeEntity == ComputerTerminal", "update": "activeEntity := Shell"},
+    {"id": "RE-R9", "event": "TOOL_RETURN(Shell,ComputerTerminal)", "guard": "activeEntity == Shell", "update": "activeEntity := ComputerTerminal"},
+    {"id": "RE-R10", "event": "REPORT(a)", "guard": "activeEntity == a and a in {WebSurfer,FileSurfer,Coder,ComputerTerminal}", "update": "activeEntity := Orchestrator"},
+    {"id": "RE-R11", "event": "ASSESS_COMPLETE", "guard": "activeEntity == Orchestrator and phase == Executing", "update": "requestSatisfied := True; stallCount := 0"},
+    {"id": "RE-R12", "event": "ASSESS_PROGRESS", "guard": "activeEntity == Orchestrator and phase == Executing", "update": "requestSatisfied := False; stallCount := dec_stall(stallCount)"},
+    {"id": "RE-R13", "event": "ASSESS_STALL", "guard": "activeEntity == Orchestrator and phase == Executing", "update": "requestSatisfied := False; stallCount := inc_cap_3plus(stallCount)"},
+    {"id": "RE-R14", "event": "REPLAN", "guard": "activeEntity == Orchestrator and stallCount == 3+ and budget > 0", "update": "phase := Replanning; requestSatisfied := Unknown; budget := budget - 1"},
+    {"id": "RE-R15", "event": "FINALIZE", "guard": "activeEntity == Orchestrator and requestSatisfied == True", "update": "activeEntity := END; phase := Finalizing; executionStatus := Completed"},
+    {"id": "RE-R16", "event": "BUDGET_TERMINATE", "guard": "budget == 0 and activeEntity != END", "update": "activeEntity := END; executionStatus := Terminated"}
+  ]
+}

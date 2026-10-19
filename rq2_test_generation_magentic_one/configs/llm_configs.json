@@ -1,0 +1,12 @@
+{
+  "llms": {
+    "deepseek": {
+      "type": "openai_compatible",
+      "base_url": "https://api.deepseek.com",
+      "model": "deepseek-flash",
+      "api_key_env": "DEEPSEEK_API_KEY",
+      "timeout_sec": 180
+    },
+    "mock": {"type": "mock"}
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "version":"1.1",
+  "rules":{
+    "numeric":{"normalizer":"numeric","comparator":"exact_numeric"},
+    "integer":{"normalizer":"integer","comparator":"exact_numeric"},
+    "short_text":{"normalizer":"strip_casefold","comparator":"normalized_exact"},
+    "date":{"normalizer":"iso_date","comparator":"normalized_exact"},
+    "set":{"normalizer":"set_tokens","comparator":"set_equal"},
+    "json":{"normalizer":"canonical_json","comparator":"normalized_exact"}
+  },
+  "note":"Expected values come from grounded catalog records, not from free-form LLM generation."
+}

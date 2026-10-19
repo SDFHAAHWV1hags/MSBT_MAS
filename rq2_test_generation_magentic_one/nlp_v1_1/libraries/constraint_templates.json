@@ -1,0 +1,27 @@
+{
+  "version":"1.1",
+  "templates":{
+    "requires_public_web_source":{"type":"model","text":"The task should require obtaining information from a publicly accessible Web source."},
+    "requires_document_internal_evidence":{"type":"model","text":"The requested evidence should be located inside the referenced or obtained document rather than only in its title or landing page."},
+    "anti_search_snippet_shortcut":{"type":"anti_shortcut","text":"The final answer should not be directly answerable from a search-result snippet; the document itself should need to be inspected."},
+    "requires_actual_computation":{"type":"anti_shortcut","text":"The final answer should depend on a calculation or executable transformation rather than direct lookup alone."},
+    "requires_independent_verification":{"type":"anti_shortcut","text":"The candidate result should be confirmed using an independent source or consistency check before finalization."},
+    "requires_data_extraction":{"type":"semantic","text":"The task should require extracting specific information or structured data from a source."},
+    "requires_data_analysis":{"type":"semantic","text":"The task should require analyzing, comparing, aggregating, or deriving a result from data."},
+    "requires_code_generation":{"type":"semantic","text":"The task should require producing code or a program artifact as part of the solution process."},
+    "preserve_dependency_order":{"type":"assembly","text":"The generated task must preserve the information dependencies between required capabilities."},
+    "preserve_domain_requirements":{"type":"assembly","text":"The generated task should remain semantically aligned with the domain specialties implied by the target path."},
+    "no_internal_implementation_leakage":{"type":"validation","text":"Do not mention internal agent names, tool names, states, transition identifiers, or testing objectives in the user-facing task."},
+    "use_only_grounded_entities":{"type":"validation","text":"Use only entities and factual values supplied by the grounded entity/fact catalog."}
+  },
+  "capability_to_constraints":{
+    "web_retrieval":["requires_public_web_source"],
+    "document_inspection":["requires_document_internal_evidence","anti_search_snippet_shortcut"],
+    "executable_computation":["requires_actual_computation"],
+    "verification":["requires_independent_verification"],
+    "data_extraction":["requires_data_extraction"],
+    "data_analysis":["requires_data_analysis"],
+    "code_generation":["requires_code_generation"]
+  },
+  "always":["preserve_dependency_order","preserve_domain_requirements","no_internal_implementation_leakage","use_only_grounded_entities"]
+}

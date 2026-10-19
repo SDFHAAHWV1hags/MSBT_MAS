@@ -1,0 +1,17 @@
+autogen-agentchat==0.7.5
+autogen-core==0.7.5
+autogen-ext[openai]==0.7.5
+openai==2.54.0
+python-dotenv==1.2.3
+PyYAML==6.0.3
+aiofiles==25.1.0
+tiktoken==0.14.0
+magika==0.6.3
+markitdown==0.1.0a4
+playwright==1.63.0
+pillow==12.3.0
+openpyxl==3.1.5
+pdfminer.six==20260107
+python-pptx==1.0.2
+scipy==1.18.1
+numpy==2.5.2

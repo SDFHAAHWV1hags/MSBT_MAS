@@ -1,0 +1,143 @@
+{
+  "schema_version": "1.0",
+  "model_id": "CaptainAgent-Alg057-PdfApplicants",
+  "family": "CaptainAgent-generated",
+  "framework": "AG2 / CaptainAgent (Who&When Algorithm-Generated 57.json)",
+  "modeling_scope": "static test model; no trace-based model completion",
+  "provenance": {
+    "dataset_dir": "/home/zs/mas/Agents_Failure_Attribution-main/Who&When/Algorithm-Generated",
+    "source_file": "57.json",
+    "question_id": "bfcd99e1-0690-4b53-a85c-0174a8629083",
+    "gaia_attachment": "bfcd99e1-0690-4b53-a85c-0174a8629083.zip",
+    "level": 2
+  },
+  "modeling_notes": [
+    "The task counts applicants in PDF job postings who lack exactly one qualification; the GAIA attachment is a zip (containing PDFs), and the traced code unpacked it with zipfile and then called functions.extract_pdf_text.",
+    "The system delegates subtasks and selects the next speaker via an implicit Captain/group-chat manager (over_approximation: fully connected).",
+    "All three experts' prompts contain a 'How to use code?' section, so all of them are bound to Computer_terminal.",
+    "WebSearch corresponds to functions.perform_web_search (referred to as the Bing Search API in the prompts); PDFTextExtraction corresponds to functions.extract_pdf_text (actually called in the traces). Both happen inside code executed by Computer_terminal, and the abstraction layer records them as the corresponding TOOL_CALL by primary tool."
+  ],
+  "structure": {
+    "agents": [
+      "TextExtraction_Expert",
+      "DataManipulation_Expert",
+      "Verification_Expert"
+    ],
+    "tools": [
+      "Computer_terminal",
+      "WebSearch",
+      "PDFTextExtraction"
+    ],
+    "special_entities": [
+      "START",
+      "END"
+    ],
+    "entities": [
+      "START",
+      "TextExtraction_Expert",
+      "DataManipulation_Expert",
+      "Verification_Expert",
+      "Computer_terminal",
+      "WebSearch",
+      "PDFTextExtraction",
+      "END"
+    ],
+    "entity_types": {
+      "START": "Special",
+      "END": "Special",
+      "TextExtraction_Expert": "Agent",
+      "DataManipulation_Expert": "Agent",
+      "Verification_Expert": "Agent",
+      "Computer_terminal": "Tool",
+      "WebSearch": "Tool",
+      "PDFTextExtraction": "Tool"
+    },
+    "agent_coordination": {
+      "selector": "LLM/group-chat manager (CaptainAgent)",
+      "over_approximation": true,
+      "edges": [
+        {"source": "TextExtraction_Expert", "target": "TextExtraction_Expert"},
+        {"source": "TextExtraction_Expert", "target": "DataManipulation_Expert"},
+        {"source": "TextExtraction_Expert", "target": "Verification_Expert"},
+        {"source": "DataManipulation_Expert", "target": "TextExtraction_Expert"},
+        {"source": "DataManipulation_Expert", "target": "DataManipulation_Expert"},
+        {"source": "DataManipulation_Expert", "target": "Verification_Expert"},
+        {"source": "Verification_Expert", "target": "TextExtraction_Expert"},
+        {"source": "Verification_Expert", "target": "DataManipulation_Expert"},
+        {"source": "Verification_Expert", "target": "Verification_Expert"}
+      ]
+    },
+    "agent_tool_bindings": [
+      {"agent": "TextExtraction_Expert", "tool": "Computer_terminal", "evidence": "prompt: 'How to use code?' section; history: zipfile/re code executed"},
+      {"agent": "TextExtraction_Expert", "tool": "WebSearch", "evidence": "prompt: Bing Search API skill (functions.perform_web_search)"},
+      {"agent": "TextExtraction_Expert", "tool": "PDFTextExtraction", "evidence": "history: from functions import extract_pdf_text"},
+      {"agent": "DataManipulation_Expert", "tool": "Computer_terminal", "evidence": "prompt: 'How to use code?' section; pandas data manipulation role"},
+      {"agent": "Verification_Expert", "tool": "Computer_terminal", "evidence": "prompt: 'How to use code?' section"}
+    ]
+  },
+  "agent_definitions": {
+    "TextExtraction_Expert": {
+      "role": "Text/information extraction specialist using Bing Search API and code; retrieves and parses content from documents (zip/pdf) and web.",
+      "capabilities": ["data_extraction", "web_retrieval", "document_inspection"]
+    },
+    "DataManipulation_Expert": {
+      "role": "Data manipulation and analysis expert using pandas; transforms extracted records and computes aggregate answers.",
+      "capabilities": ["data_analysis"]
+    },
+    "Verification_Expert": {
+      "role": "Verification expert with rigorous checking methodology; validates extracted evidence and computed counts before acceptance.",
+      "capabilities": ["verification", "data_analysis"]
+    }
+  },
+  "configuration_parameters": {
+    "max_interactions": 10
+  },
+  "state_model": {
+    "core_variables": ["activeEntity", "executionStatus", "budget"],
+    "specific_variables": [],
+    "initial_state": {
+      "activeEntity": "START",
+      "executionStatus": "Running",
+      "budget": 10
+    },
+    "terminal_predicate": "activeEntity == END"
+  },
+  "transition_rules": [
+    {
+      "id": "CA-R1",
+      "event": "SELECT_INITIAL(a)",
+      "guard": "activeEntity == START and a in Agents and budget > 0",
+      "update": "activeEntity := a; budget := budget - 1"
+    },
+    {
+      "id": "CA-R2",
+      "event": "SELECT_NEXT(a_j)",
+      "guard": "activeEntity in Agents and a_j in Agents and budget > 0",
+      "update": "activeEntity := a_j; budget := budget - 1"
+    },
+    {
+      "id": "CA-R3",
+      "event": "TOOL_CALL(a,t)",
+      "guard": "activeEntity == a and (a,t) in Gamma_T",
+      "update": "activeEntity := t"
+    },
+    {
+      "id": "CA-R4",
+      "event": "TOOL_RETURN(t,a)",
+      "guard": "activeEntity == t and (a,t) in Gamma_T",
+      "update": "activeEntity := a"
+    },
+    {
+      "id": "CA-R5",
+      "event": "TERMINATE",
+      "guard": "activeEntity in Agents",
+      "update": "activeEntity := END; executionStatus := Completed"
+    },
+    {
+      "id": "CA-R6",
+      "event": "BUDGET_TERMINATE",
+      "guard": "budget == 0 and activeEntity != END",
+      "update": "activeEntity := END; executionStatus := Terminated"
+    }
+  ]
+}

@@ -1,0 +1,494 @@
+{
+  "schema_version": "1.0",
+  "model_id": "Magentic-One",
+  "family": "Magentic-One",
+  "framework": "Microsoft AutoGen / Magentic-One",
+  "modeling_scope": "static architecture-, framework-semantics-, and benchmark-configuration-derived test model; Who&When execution histories are not used for model completion",
+  "source": {
+    "dataset": "Who&When",
+    "dataset_files": "Hand-Crafted/*.json (58 traces retained only as evaluation data, not construction input)",
+    "architecture_source": "Magentic-One technical report and AutoGen architecture documentation",
+    "benchmark_parameter_source": "Who&When Appendix E (maximum 30 rounds)"
+  },
+  "agent_definitions": {
+    "Orchestrator": {
+      "role": "lead agent for task decomposition, planning, delegation, progress tracking, corrective action, and termination"
+    },
+    "WebSurfer": {
+      "role": "LLM-based web-navigation specialist operating a Chromium-based browser"
+    },
+    "FileSurfer": {
+      "role": "LLM-based local-file navigation and preview specialist"
+    },
+    "Coder": {
+      "role": "LLM-based code-writing, analysis, artifact-creation, and debugging specialist"
+    },
+    "ComputerTerminal": {
+      "role": "execution agent/resource providing console-shell execution for code and commands"
+    }
+  },
+  "structure": {
+    "agents": [
+      "Orchestrator",
+      "WebSurfer",
+      "FileSurfer",
+      "Coder",
+      "ComputerTerminal"
+    ],
+    "tools": [
+      "Browser",
+      "FileSystem",
+      "Shell"
+    ],
+    "special_entities": [
+      "START",
+      "END"
+    ],
+    "entities": [
+      "START",
+      "Orchestrator",
+      "WebSurfer",
+      "FileSurfer",
+      "Coder",
+      "ComputerTerminal",
+      "Browser",
+      "FileSystem",
+      "Shell",
+      "END"
+    ],
+    "entity_types": {
+      "Orchestrator": "Agent",
+      "WebSurfer": "Agent",
+      "FileSurfer": "Agent",
+      "Coder": "Agent",
+      "ComputerTerminal": "Agent",
+      "Browser": "Tool",
+      "FileSystem": "Tool",
+      "Shell": "Tool",
+      "START": "Special",
+      "END": "Special"
+    },
+    "agent_coordination": {
+      "symbol": "Gamma_A",
+      "semantics": "statically permitted orchestration relation",
+      "over_approximation": false,
+      "selector": "Orchestrator",
+      "edges": [
+        {
+          "source": "Orchestrator",
+          "target": "WebSurfer",
+          "kind": "orchestration_candidate"
+        },
+        {
+          "source": "WebSurfer",
+          "target": "Orchestrator",
+          "kind": "report_return"
+        },
+        {
+          "source": "Orchestrator",
+          "target": "FileSurfer",
+          "kind": "orchestration_candidate"
+        },
+        {
+          "source": "FileSurfer",
+          "target": "Orchestrator",
+          "kind": "report_return"
+        },
+        {
+          "source": "Orchestrator",
+          "target": "Coder",
+          "kind": "orchestration_candidate"
+        },
+        {
+          "source": "Coder",
+          "target": "Orchestrator",
+          "kind": "report_return"
+        },
+        {
+          "source": "Orchestrator",
+          "target": "ComputerTerminal",
+          "kind": "orchestration_candidate"
+        },
+        {
+          "source": "ComputerTerminal",
+          "target": "Orchestrator",
+          "kind": "report_return"
+        }
+      ],
+      "note": "The model captures the star-shaped Orchestrator/specialist workflow at the capability level; exact natural-language assignments remain runtime decisions."
+    },
+    "agent_tool_bindings": [
+      {
+        "agent": "WebSurfer",
+        "tool": "Browser",
+        "evidence": "Magentic-One static architecture: WebSurfer operates a Chromium-based browser",
+        "confidence": "high"
+      },
+      {
+        "agent": "FileSurfer",
+        "tool": "FileSystem",
+        "evidence": "testing abstraction of the markdown-based local-file preview/navigation capability controlled by FileSurfer",
+        "confidence": "high"
+      },
+      {
+        "agent": "ComputerTerminal",
+        "tool": "Shell",
+        "evidence": "Magentic-One static architecture: ComputerTerminal provides console-shell execution",
+        "confidence": "high"
+      }
+    ]
+  },
+  "configuration_parameters": {
+    "max_rounds": 30,
+    "stall_threshold": 3,
+    "budget_variable": "budget",
+    "budget_policy": "The test abstraction decrements the remaining round budget on DELEGATE events. Tool-internal transitions do not consume an additional abstract round.",
+    "stall_policy": "A stall count greater than 2 (represented as 3+) enables REPLAN."
+  },
+  "state_model": {
+    "core_variables": [
+      "activeEntity",
+      "executionStatus",
+      "budget"
+    ],
+    "specific_variables": [
+      "phase",
+      "requestSatisfied",
+      "progressStatus",
+      "loopStatus",
+      "stallCount"
+    ],
+    "variables": [
+      {
+        "name": "activeEntity",
+        "domain": [
+          "START",
+          "Orchestrator",
+          "WebSurfer",
+          "FileSurfer",
+          "Coder",
+          "ComputerTerminal",
+          "Browser",
+          "FileSystem",
+          "Shell",
+          "END"
+        ],
+        "initial": "START",
+        "role": "currently active observable execution entity",
+        "category": "core"
+      },
+      {
+        "name": "executionStatus",
+        "domain": [
+          "Running",
+          "Completed",
+          "Terminated"
+        ],
+        "initial": "Running",
+        "role": "internal MAS execution lifecycle, distinct from the external test oracle",
+        "category": "core"
+      },
+      {
+        "name": "budget",
+        "domain": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30
+        ],
+        "initial": 30,
+        "role": "remaining abstract round budget; Who&When configures Magentic-One with up to 30 rounds",
+        "category": "core"
+      },
+      {
+        "name": "phase",
+        "domain": [
+          "Idle",
+          "Planning",
+          "Executing",
+          "Replanning",
+          "Finalizing"
+        ],
+        "initial": "Idle",
+        "role": "current orchestration phase",
+        "category": "framework-specific"
+      },
+      {
+        "name": "requestSatisfied",
+        "domain": [
+          "Unknown",
+          "False",
+          "True"
+        ],
+        "initial": "Unknown",
+        "role": "abstract task-completion judgment maintained by the Orchestrator progress ledger",
+        "category": "framework-specific"
+      },
+      {
+        "name": "progressStatus",
+        "domain": [
+          "Unknown",
+          "Forward",
+          "Stalled"
+        ],
+        "initial": "Unknown",
+        "role": "abstract forward-progress judgment maintained by the progress ledger",
+        "category": "framework-specific"
+      },
+      {
+        "name": "loopStatus",
+        "domain": [
+          "Unknown",
+          "NonLooping",
+          "Looping"
+        ],
+        "initial": "Unknown",
+        "role": "abstract loop/repetition judgment maintained by the progress ledger",
+        "category": "framework-specific"
+      },
+      {
+        "name": "stallCount",
+        "domain": [
+          "0",
+          "1",
+          "2",
+          "3+"
+        ],
+        "initial": "0",
+        "role": "abstract consecutive stall counter; 3+ enables outer-loop replanning",
+        "category": "framework-specific"
+      }
+    ],
+    "initial_state": {
+      "activeEntity": "START",
+      "executionStatus": "Running",
+      "budget": 30,
+      "phase": "Idle",
+      "requestSatisfied": "Unknown",
+      "progressStatus": "Unknown",
+      "loopStatus": "Unknown",
+      "stallCount": "0"
+    },
+    "terminal_predicate": "activeEntity == END"
+  },
+  "event_alphabet": [
+    "RECEIVE",
+    "PLAN",
+    "DELEGATE(a)",
+    "REPORT(a)",
+    "TOOL_CALL(WebSurfer,Browser)",
+    "TOOL_RETURN(Browser,WebSurfer)",
+    "TOOL_CALL(FileSurfer,FileSystem)",
+    "TOOL_RETURN(FileSystem,FileSurfer)",
+    "TOOL_CALL(ComputerTerminal,Shell)",
+    "TOOL_RETURN(Shell,ComputerTerminal)",
+    "ASSESS_COMPLETE",
+    "ASSESS_PROGRESS",
+    "ASSESS_STALL",
+    "ASSESS_LOOP",
+    "REPLAN",
+    "FINALIZE",
+    "BUDGET_TERMINATE"
+  ],
+  "transition_rules": [
+    {
+      "id": "MO-R1",
+      "event": "RECEIVE",
+      "guard": "activeEntity == START",
+      "update": "activeEntity := Orchestrator; phase := Planning",
+      "budget_cost": 0,
+      "semantics": "The Orchestrator receives the task and initializes the outer-loop planning process."
+    },
+    {
+      "id": "MO-R2",
+      "event": "PLAN",
+      "guard": "activeEntity == Orchestrator and phase in {Planning, Replanning}",
+      "update": "phase := Executing",
+      "budget_cost": 0,
+      "semantics": "The Orchestrator creates or revises the task ledger and execution plan."
+    },
+    {
+      "id": "MO-R3",
+      "event": "DELEGATE(a)",
+      "guard": "activeEntity == Orchestrator and phase == Executing and a in {WebSurfer, FileSurfer, Coder, ComputerTerminal} and budget > 0",
+      "update": "activeEntity := a; budget := budget - 1",
+      "budget_cost": 1,
+      "semantics": "The Orchestrator selects a specialized agent and assigns a subtask."
+    },
+    {
+      "id": "MO-R4",
+      "event": "REPORT(a)",
+      "guard": "activeEntity == a and a in {WebSurfer, FileSurfer, Coder, ComputerTerminal}",
+      "update": "activeEntity := Orchestrator",
+      "budget_cost": 0,
+      "semantics": "A specialist returns its result or execution observation to the Orchestrator."
+    },
+    {
+      "id": "MO-R5",
+      "event": "TOOL_CALL(WebSurfer,Browser)",
+      "guard": "activeEntity == WebSurfer",
+      "update": "activeEntity := Browser",
+      "budget_cost": 0,
+      "semantics": "The WebSurfer operates the browser."
+    },
+    {
+      "id": "MO-R6",
+      "event": "TOOL_RETURN(Browser,WebSurfer)",
+      "guard": "activeEntity == Browser",
+      "update": "activeEntity := WebSurfer",
+      "budget_cost": 0,
+      "semantics": "Browser control returns to WebSurfer after an observable browser action."
+    },
+    {
+      "id": "MO-R7",
+      "event": "TOOL_CALL(FileSurfer,FileSystem)",
+      "guard": "activeEntity == FileSurfer",
+      "update": "activeEntity := FileSystem",
+      "budget_cost": 0,
+      "semantics": "FileSurfer operates the abstract local-file preview/navigation tool entity."
+    },
+    {
+      "id": "MO-R8",
+      "event": "TOOL_RETURN(FileSystem,FileSurfer)",
+      "guard": "activeEntity == FileSystem",
+      "update": "activeEntity := FileSurfer",
+      "budget_cost": 0,
+      "semantics": "The local-file tool returns control to FileSurfer."
+    },
+    {
+      "id": "MO-R9",
+      "event": "TOOL_CALL(ComputerTerminal,Shell)",
+      "guard": "activeEntity == ComputerTerminal",
+      "update": "activeEntity := Shell",
+      "budget_cost": 0,
+      "semantics": "ComputerTerminal executes code or shell commands."
+    },
+    {
+      "id": "MO-R10",
+      "event": "TOOL_RETURN(Shell,ComputerTerminal)",
+      "guard": "activeEntity == Shell",
+      "update": "activeEntity := ComputerTerminal",
+      "budget_cost": 0,
+      "semantics": "Shell execution returns control to ComputerTerminal."
+    },
+    {
+      "id": "MO-R11",
+      "event": "ASSESS_COMPLETE",
+      "guard": "activeEntity == Orchestrator and phase == Executing",
+      "update": "requestSatisfied := True; progressStatus := Forward; loopStatus := NonLooping",
+      "budget_cost": 0,
+      "semantics": "The progress ledger judges the request fully satisfied."
+    },
+    {
+      "id": "MO-R12",
+      "event": "ASSESS_PROGRESS",
+      "guard": "activeEntity == Orchestrator and phase == Executing",
+      "update": "requestSatisfied := False; progressStatus := Forward; loopStatus := NonLooping; stallCount := dec_to_zero(stallCount)",
+      "budget_cost": 0,
+      "semantics": "The progress ledger judges that forward progress is being made."
+    },
+    {
+      "id": "MO-R13",
+      "event": "ASSESS_STALL",
+      "guard": "activeEntity == Orchestrator and phase == Executing",
+      "update": "requestSatisfied := False; progressStatus := Stalled; stallCount := inc_cap_3plus(stallCount)",
+      "budget_cost": 0,
+      "semantics": "The progress ledger detects lack of forward progress."
+    },
+    {
+      "id": "MO-R14",
+      "event": "ASSESS_LOOP",
+      "guard": "activeEntity == Orchestrator and phase == Executing",
+      "update": "requestSatisfied := False; loopStatus := Looping; stallCount := inc_cap_3plus(stallCount)",
+      "budget_cost": 0,
+      "semantics": "The progress ledger detects looping/repetition."
+    },
+    {
+      "id": "MO-R15",
+      "event": "REPLAN",
+      "guard": "activeEntity == Orchestrator and stallCount == 3+",
+      "update": "phase := Replanning; progressStatus := Unknown; loopStatus := Unknown; requestSatisfied := Unknown; stallCount := 0",
+      "budget_cost": 0,
+      "semantics": "Stall count exceeding the experimental threshold (>2) triggers the outer-loop reflection and replanning cycle."
+    },
+    {
+      "id": "MO-R16",
+      "event": "FINALIZE",
+      "guard": "activeEntity == Orchestrator and requestSatisfied == True",
+      "update": "activeEntity := END; phase := Finalizing; executionStatus := Completed",
+      "budget_cost": 0,
+      "semantics": "The Orchestrator finalizes the task after judging the request satisfied."
+    },
+    {
+      "id": "MO-R17",
+      "event": "BUDGET_TERMINATE",
+      "guard": "budget == 0 and activeEntity != END",
+      "update": "activeEntity := END; executionStatus := Terminated",
+      "budget_cost": 0,
+      "semantics": "The benchmark-level round budget is exhausted."
+    }
+  ],
+  "search_interface": {
+    "path_representation": "finite sequence of enabled transition-rule instances",
+    "start_state": "state_model.initial_state",
+    "terminal_predicate": "activeEntity == END",
+    "candidate_rule_ids": [
+      "MO-R1",
+      "MO-R2",
+      "MO-R3",
+      "MO-R4",
+      "MO-R5",
+      "MO-R6",
+      "MO-R7",
+      "MO-R8",
+      "MO-R9",
+      "MO-R10",
+      "MO-R11",
+      "MO-R12",
+      "MO-R13",
+      "MO-R14",
+      "MO-R15",
+      "MO-R16",
+      "MO-R17"
+    ],
+    "state_space_policy": "reachable states are generated on demand; the Cartesian product is never enumerated eagerly"
+  },
+  "provenance": {
+    "agents_and_roles": "Magentic-One static architecture",
+    "tools": "testing abstraction of capabilities in the static architecture",
+    "benchmark_budget": "Who&When Appendix E",
+    "execution_trace_used_for_model_construction": false
+  },
+  "limitations": [
+    "Browser, FileSystem, and Shell are testing-level tool entities abstracted from the capabilities operated by WebSurfer, FileSurfer, and ComputerTerminal.",
+    "Natural-language Task Ledger and Progress Ledger contents are intentionally not included as state variables.",
+    "The model intentionally over-abstracts stochastic LLM decisions into candidate transition outcomes rather than learning behavior from execution traces."
+  ]
+}

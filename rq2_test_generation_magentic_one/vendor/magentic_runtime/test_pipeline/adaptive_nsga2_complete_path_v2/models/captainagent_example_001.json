@@ -1,0 +1,147 @@
+{
+  "schema_version": "1.0",
+  "model_id": "CaptainAgent-1",
+  "family": "CaptainAgent-generated",
+  "framework": "AG2 / CaptainAgent",
+  "modeling_scope": "static test model; no trace-based model completion",
+  "structure": {
+    "agents": [
+      "Excel_Expert",
+      "DataVerification_Expert",
+      "BusinessLogic_Expert"
+    ],
+    "tools": [
+      "Computer_terminal",
+      "Bing_Search_API"
+    ],
+    "special_entities": [
+      "START",
+      "END"
+    ],
+    "entities": [
+      "START",
+      "Excel_Expert",
+      "DataVerification_Expert",
+      "BusinessLogic_Expert",
+      "Computer_terminal",
+      "Bing_Search_API",
+      "END"
+    ],
+    "entity_types": {
+      "Excel_Expert": "Agent",
+      "DataVerification_Expert": "Agent",
+      "BusinessLogic_Expert": "Agent",
+      "Computer_terminal": "Tool",
+      "Bing_Search_API": "Tool",
+      "START": "Special",
+      "END": "Special"
+    },
+    "agent_coordination": {
+      "selector": "LLM/group-chat manager",
+      "over_approximation": true,
+      "edges": [
+        {
+          "source": "Excel_Expert",
+          "target": "Excel_Expert"
+        },
+        {
+          "source": "Excel_Expert",
+          "target": "DataVerification_Expert"
+        },
+        {
+          "source": "Excel_Expert",
+          "target": "BusinessLogic_Expert"
+        },
+        {
+          "source": "DataVerification_Expert",
+          "target": "Excel_Expert"
+        },
+        {
+          "source": "DataVerification_Expert",
+          "target": "DataVerification_Expert"
+        },
+        {
+          "source": "DataVerification_Expert",
+          "target": "BusinessLogic_Expert"
+        },
+        {
+          "source": "BusinessLogic_Expert",
+          "target": "Excel_Expert"
+        },
+        {
+          "source": "BusinessLogic_Expert",
+          "target": "DataVerification_Expert"
+        },
+        {
+          "source": "BusinessLogic_Expert",
+          "target": "BusinessLogic_Expert"
+        }
+      ]
+    },
+    "agent_tool_bindings": [
+      {
+        "agent": "DataVerification_Expert",
+        "tool": "Computer_terminal"
+      },
+      {
+        "agent": "DataVerification_Expert",
+        "tool": "Bing_Search_API"
+      }
+    ]
+  },
+  "configuration_parameters": {
+    "max_interactions": 10
+  },
+  "state_model": {
+    "core_variables": [
+      "activeEntity",
+      "executionStatus",
+      "budget"
+    ],
+    "specific_variables": [],
+    "initial_state": {
+      "activeEntity": "START",
+      "executionStatus": "Running",
+      "budget": 10
+    },
+    "terminal_predicate": "activeEntity == END"
+  },
+  "transition_rules": [
+    {
+      "id": "CA-R1",
+      "event": "SELECT_INITIAL(a)",
+      "guard": "activeEntity == START and a in Agents and budget > 0",
+      "update": "activeEntity := a; budget := budget - 1"
+    },
+    {
+      "id": "CA-R2",
+      "event": "SELECT_NEXT(a_j)",
+      "guard": "activeEntity in Agents and a_j in Agents and budget > 0",
+      "update": "activeEntity := a_j; budget := budget - 1"
+    },
+    {
+      "id": "CA-R3",
+      "event": "TOOL_CALL(a,t)",
+      "guard": "activeEntity == a and (a,t) in Gamma_T",
+      "update": "activeEntity := t"
+    },
+    {
+      "id": "CA-R4",
+      "event": "TOOL_RETURN(t,a)",
+      "guard": "activeEntity == t and (a,t) in Gamma_T",
+      "update": "activeEntity := a"
+    },
+    {
+      "id": "CA-R5",
+      "event": "TERMINATE",
+      "guard": "activeEntity in Agents",
+      "update": "activeEntity := END; executionStatus := Completed"
+    },
+    {
+      "id": "CA-R6",
+      "event": "BUDGET_TERMINATE",
+      "guard": "budget == 0 and activeEntity != END",
+      "update": "activeEntity := END; executionStatus := Terminated"
+    }
+  ]
+}

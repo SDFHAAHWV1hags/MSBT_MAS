@@ -1,0 +1,86 @@
+# ============================================================================
+# Dedicated configuration for the c1_qwen experiment (2026-10-01)
+#
+# Purpose: as a contrast to c1 (direct-LLM baseline, MAS backbone=deepseek-flash),
+#       only the LLM inside the MAS agents is replaced with qwen3.8-flash, isolating the "LLM effect".
+#
+# Comparison protocol (everything except the backbone is identical to c1):
+#   * question-generation LLM (host-side C1_direct_llm_baseline.py, reads configs/llm_configs.json)
+#     stays deepseek-flash, same seed -> same question distribution;
+#   * internal MAS backbone (usages.mas) = qwen3.8-flash (the only substantive change in this file);
+#   * same system under test Magentic-One.json, same budget 30, same executor, same 5 seeds x 30 questions.
+#
+# Connectivity check: scripts/test_qwen_key.py (both the official and the channel endpoint passed on 2026-10-01)
+# Loading: the worker points the MAS_CONFIG_PATH environment variable at this file (see run_c1_qwen.sh)
+# ============================================================================
+
+llm:
+  active: deepseek
+
+  providers:
+    deepseek:
+      base_url: https://api.deepseek.com
+      model: deepseek-flash
+      api_key_env: DEEPSEEK_API_KEY
+      temperature: 0.7
+      max_tokens: 16000
+      max_retries: 2
+    # c1_qwen addition: the official Alibaba Bailian OpenAI-compatible endpoint (the same key passed live tests at dashscope.aliyuncs.com)
+    qwen38:
+      base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      model: qwen3.8-flash
+      api_key_env: DASHSCOPE_API_KEY
+      temperature: 0.7
+      max_tokens: 16000
+      max_retries: 2
+      # qwen3.8-flash was verified to support strict json_schema; with it enabled the orchestrator ledger no longer drifts with missing keys
+      structured_output: true
+
+  usages:
+    question_generation:
+      provider: deepseek          # question generation stays deepseek (note: the c1 host actually reads llm_configs.json; this is only an explicit declaration)
+      temperature: 0.7
+      max_tokens: 16000
+    mas:
+      provider: qwen38            # ★ the only substantive change: the Magentic-One agent backbone
+      temperature: 0.0
+      max_tokens: 16000
+    validation:
+      provider: deepseek
+      temperature: 0.0
+      max_tokens: 16000
+
+search:
+  num_tests: 5
+  seed: 42
+  pop_size: 40
+  generations: 20
+  crossover_rate: 0.80
+  mutation_rate: 0.35
+  max_path_len: 30
+  path_gen_retries: 30
+  terminal_template_weight: 0.20
+  k_neighbors: 5
+  beta_alpha: 1.0
+  beta_beta: 1.0
+
+question_generation:
+  n_candidates: 3
+  use_llm: true
+  template_fallback: true
+
+sandbox:
+  mode: local
+  image: mas-sandbox:latest
+  timeout: 180
+
+mas:
+  max_turns: 15
+
+logging:
+  level: INFO
+
+validation:
+  mast:
+    rules: true
+    llm_judge: true
